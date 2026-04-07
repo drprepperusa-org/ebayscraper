@@ -294,6 +294,7 @@ async function scrapeAndNotify(options = {}) {
   if (sendToSheets) {
     try {
       const sheetsClient = new GoogleSheetsClient();
+      await sheetsClient.clearDeals(); // Clear old data first
       await sheetsClient.appendDeals(allDeals);
       sheetsStatus = 'sent';
     } catch (err) {

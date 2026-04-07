@@ -49,6 +49,23 @@ class GoogleSheetsClient {
     return oauth2Client;
   }
 
+  async clearDeals() {
+    const auth = this.getAuthClient();
+    const sheets = google.sheets({ version: 'v4', auth });
+
+    try {
+      // Clear everything except the header row (row 1)
+      await sheets.spreadsheets.values.clear({
+        spreadsheetId: this.SHEET_ID,
+        range: `${this.SHEET_NAME}!A2:J`,
+      });
+      console.log('🗑️  Cleared all deals from Google Sheets (headers kept)');
+    } catch (error) {
+      console.error('❌ Failed to clear sheet:', error.message);
+      throw error;
+    }
+  }
+
   async appendDeals(deals) {
     const auth = this.getAuthClient();
     const sheets = google.sheets({ version: 'v4', auth });

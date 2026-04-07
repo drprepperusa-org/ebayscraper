@@ -45,19 +45,23 @@ class DiscordWebhook {
   }
 
   _buildEmbed(capacity, deals) {
-    const topDeals = deals.slice(0, 10); // Top 10 deals
+    const topDeals = deals.slice(0, 5); // Top 5 deals to stay under Discord limits
     const thresholds = { '32GB': 100, '64GB': 200, '128GB': 500 };
     const threshold = thresholds[capacity] || '?';
-    
-    // Build description with per-deal formatting matching Discord embed style
-    let description = `Found ${deals.length} deals under threshold ($${threshold}/stick)\n\n`;
-    
+
+    let description = `Found **${deals.length}** deals under threshold ($${threshold}/stick)\n\n`;
+
     topDeals.forEach((deal, idx) => {
       const stickLabel = deal.stickCount > 1 ? `(${deal.stickCount}x)` : '(1x)';
-      description += `#${idx + 1} - $${deal.perStickCost}/stick ${stickLabel}\n`;
-      description += `[${deal.title}](${deal.link})\n`;
-      description += `Price: $${deal.price} | Seller: ${deal.seller}\n\n`;
+      const title = deal.title.length > 80 ? deal.title.substring(0, 77) + '...' : deal.title;
+      description += `**#${idx + 1}** - $${deal.perStickCost}/stick ${stickLabel}\n`;
+      description += `[${title}](${deal.link})\n`;
+      description += `$${deal.price} | ${deal.condition}\n\n`;
     });
+
+    if (deals.length > 5) {
+      description += `_...and ${deals.length - 5} more deals (see Google Sheet)_\n`;
+    }
 
     const now = new Date();
     const pstTime = now.toLocaleString('en-US', { 
