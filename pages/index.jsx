@@ -118,17 +118,6 @@ export default function Dashboard() {
   const [runStatus, setRunStatus] = useState('Ready to scrape');
   const [stats, setStats] = useState(null);
   const [integrations, setIntegrations] = useState({ discord: false, sheets: false });
-  const [logs, setLogs] = useState([{ msg: 'Ready. Configure settings and run the scraper.', type: 'info' }]);
-  const [pipelineOpen, setPipelineOpen] = useState(true);
-
-  // Config
-  const [thresh32, setThresh32] = useState(100);
-  const [thresh64, setThresh64] = useState(200);
-  const [thresh128, setThresh128] = useState(500);
-  const [cap32, setCap32] = useState(true);
-  const [cap64, setCap64] = useState(true);
-  const [cap128, setCap128] = useState(true);
-  const [maxPages, setMaxPages] = useState(10);
   const [logs, setLogs] = useState([{ msg: 'Ready. Add products and hit Run.', type: 'info' }]);
 
   const [products, setProducts] = useState(DEFAULT_PRODUCTS);
@@ -337,43 +326,6 @@ export default function Dashboard() {
                   <CategoryDropdown value={newCategory} onChange={setNewCategory} />
                 </div>
               </div>
-            </div>
-            <div className="mt-5">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Pages to Scan</h3>
-              <div className="flex items-center gap-3">
-                <input type="range" min={1} max={200} value={maxPages} onChange={e => setMaxPages(parseInt(e.target.value))} className="flex-1 accent-violet-500" />
-                <span className="text-sm font-semibold min-w-[70px]">{maxPages} pages</span>
-              </div>
-              <p className="text-[10px] text-gray-600 mt-1">~60 listings/page. Auto-stops when no more deals.</p>
-            </div>
-          </div>
-
-          {/* Filters */}
-          <div className="bg-dark-surface border border-dark-border rounded-xl p-6">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-4 flex items-center gap-2"><Filter className="w-3.5 h-3.5" /> Filters & Exclusions</h2>
-            <div className="mb-4">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Conditions</h3>
-              <div className="flex gap-4">
-                {[[condNew, setCondNew, 'New'], [condUsed, setCondUsed, 'Used'], [condRefurb, setCondRefurb, 'Refurbished']].map(([v, s, l]) => (
-                  <label key={l} className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input type="checkbox" checked={v} onChange={e => s(e.target.checked)} className="w-4 h-4 accent-violet-500" /> {l}
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div className="border-t border-dark-border pt-4 mb-4">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Exclude Keywords</h3>
-              <div className="flex flex-wrap gap-2 mb-2">
-                {excludes.map((kw, i) => (
-                  <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/25">
-                    {kw} <button onClick={() => removeExclude(i)} className="opacity-60 hover:opacity-100"><Trash2 className="w-3 h-3" /></button>
-                  </span>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <input type="text" value={newExclude} onChange={e => setNewExclude(e.target.value)} onKeyDown={e => e.key === 'Enter' && addExclude()} placeholder="Add keyword..."
-                  className="px-3 py-1.5 bg-dark-bg border border-dashed border-dark-border rounded-lg text-xs text-gray-200 outline-none focus:border-violet-500 w-32" />
-                <button onClick={addExclude} className="px-3 py-1.5 bg-dark-surface2 border border-dark-border rounded-lg text-xs text-gray-500 hover:text-white flex items-center gap-1"><Plus className="w-3 h-3" /> Add</button>
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
