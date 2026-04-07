@@ -12,5 +12,6 @@ build/
 *~
 .env.test
 .vercel
+.next
 
 .vercel
