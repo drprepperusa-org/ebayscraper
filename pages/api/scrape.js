@@ -1,7 +1,7 @@
-const { scrapeAndNotify, DEFAULT_THRESHOLDS, DEFAULT_CAPACITIES, DEFAULT_EXCLUDE_KEYWORDS, DEFAULT_CONDITIONS } = require('../scraper');
-const { verifyAuth } = require('../lib/auth');
+const { scrapeAndNotify, DEFAULT_THRESHOLDS, DEFAULT_CAPACITIES, DEFAULT_EXCLUDE_KEYWORDS, DEFAULT_CONDITIONS } = require('../../scraper');
+const { verifyAuth } = require('../../lib/auth');
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   // Auth check (skipped if Supabase not configured)
   const auth = await verifyAuth(req);
   if (!auth.authenticated) {
@@ -44,4 +44,4 @@ module.exports = async (req, res) => {
   }
 
   res.status(405).json({ error: 'Method not allowed' });
-};
+}

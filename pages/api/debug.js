@@ -1,7 +1,7 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   try {
     const url = 'https://www.ebay.com/sch/i.html?_nkw=DDR4+32GB&_sop=15&rt=nc';
     const response = await axios.get(url, {
@@ -80,4 +80,4 @@ module.exports = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-};
+}

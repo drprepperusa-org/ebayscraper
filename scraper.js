@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 require('dotenv').config();
+const axios = require('axios');
 const cheerio = require('cheerio');
-const puppeteer = require('puppeteer-core');
 const GoogleSheetsClient = require('./google-sheets-client');
 const DiscordWebhook = require('./discord-webhook');
 
@@ -17,50 +17,22 @@ const DEFAULT_EXCLUDE_KEYWORDS = ['broken', 'for parts', 'untested', 'as-is', 'a
 
 const DEFAULT_CONDITIONS = ['new', 'used', 'refurbished'];
 
-// Find Chrome path based on platform
-function getChromePath() {
-  if (process.platform === 'win32') {
-    return 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-  } else if (process.platform === 'darwin') {
-    return '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-  }
-  return '/usr/bin/google-chrome';
-}
-
-let _browser = null;
-
-async function getBrowser() {
-  if (_browser && _browser.connected) return _browser;
-  _browser = await puppeteer.launch({
-    executablePath: getChromePath(),
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-blink-features=AutomationControlled'],
-  });
-  return _browser;
-}
-
-async function closeBrowser() {
-  if (_browser) {
-    await _browser.close().catch(() => {});
-    _browser = null;
-  }
-}
+const USER_AGENTS = [
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+];
 
 async function fetchEbayPage(url) {
-  const browser = await getBrowser();
-  const page = await browser.newPage();
-  try {
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36');
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
-
-    // Wait for listings to appear
-    await page.waitForSelector('li.s-item, li.s-card', { timeout: 10000 }).catch(() => {});
-
-    const html = await page.content();
-    return html;
-  } finally {
-    await page.close();
-  }
+  const response = await axios.get(url, {
+    headers: {
+      'User-Agent': USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)],
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.5',
+      'Accept-Encoding': 'gzip, deflate, br',
+    },
+    timeout: 10000,
+  });
+  return response.data;
 }
 
 function parseTotalCapacity(title) {
@@ -267,7 +239,6 @@ async function scrapeEbay(options = {}) {
     console.log(`${result.capacity}: ${result.deals.length} deals from ${result.scanned} listings`);
   }
 
-  await closeBrowser();
   return { deals: allDeals, scanned: totalScanned };
 }
 
