@@ -5,7 +5,7 @@ import Head from 'next/head';
 import {
   Search, LogOut, Play, Download, ChevronDown, ChevronUp,
   FileSpreadsheet, MessageSquare, Clock, Trash2,
-  Plus, BarChart3, DollarSign, TrendingDown, ExternalLink, Settings,
+  Plus, BarChart3, DollarSign, TrendingDown, ExternalLink,
   Package, X, Sparkles, ArrowUpRight, SlidersHorizontal, Check, Tag
 } from 'lucide-react';
 
@@ -23,7 +23,6 @@ const EBAY_CATEGORIES = [
   'Tickets & Experiences', 'Toys & Hobbies', 'Travel', 'Video Games & Consoles',
 ];
 
-// Custom searchable dropdown component
 function CategoryDropdown({ value, onChange }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -31,15 +30,13 @@ function CategoryDropdown({ value, onChange }) {
   const ref = useRef(null);
 
   const allCats = [...EBAY_CATEGORIES, ...customCats];
-  const filtered = search
-    ? allCats.filter(c => c.toLowerCase().includes(search.toLowerCase()))
-    : allCats;
+  const filtered = search ? allCats.filter(c => c.toLowerCase().includes(search.toLowerCase())) : allCats;
   const showCreate = search && !allCats.some(c => c.toLowerCase() === search.toLowerCase());
 
   useEffect(() => {
-    function handleClick(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, []);
 
   return (
@@ -50,37 +47,24 @@ function CategoryDropdown({ value, onChange }) {
         <span className="flex-1 text-left truncate">{value}</span>
         <ChevronDown className={`w-3.5 h-3.5 text-gray-500 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
-
       {open && (
         <div className="absolute z-50 top-full left-0 right-0 mt-1.5 bg-dark-surface border border-dark-border rounded-xl shadow-2xl shadow-black/40 overflow-hidden fade-in" style={{ minWidth: '240px' }}>
-          {/* Search input */}
           <div className="p-2 border-b border-white/5">
             <div className="flex items-center gap-2 bg-dark-bg rounded-lg px-3 py-2">
               <Search className="w-3.5 h-3.5 text-gray-500 shrink-0" />
-              <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-                placeholder="Search or type custom..."
-                autoFocus
+              <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search or type custom..." autoFocus
                 className="bg-transparent text-xs text-white outline-none w-full placeholder:text-gray-600" />
               {search && <button onClick={() => setSearch('')} className="text-gray-600 hover:text-gray-400"><X className="w-3 h-3" /></button>}
             </div>
           </div>
-
-          {/* Options list */}
           <div className="max-h-[240px] overflow-y-auto py-1 scrollbar-thin">
-            {/* Create custom option */}
             {showCreate && (
-              <button onClick={() => {
-                const custom = search.trim();
-                setCustomCats(prev => [...prev, custom]);
-                onChange(custom);
-                setSearch(''); setOpen(false);
-              }}
+              <button onClick={() => { setCustomCats(prev => [...prev, search.trim()]); onChange(search.trim()); setSearch(''); setOpen(false); }}
                 className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left text-xs hover:bg-violet-500/10 transition-colors">
                 <Plus className="w-3.5 h-3.5 text-violet-400" />
-                <span className="text-violet-400 font-medium">Create "{search.trim()}"</span>
+                <span className="text-violet-400 font-medium">Create &quot;{search.trim()}&quot;</span>
               </button>
             )}
-
             {filtered.map(cat => (
               <button key={cat} onClick={() => { onChange(cat); setSearch(''); setOpen(false); }}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs transition-colors ${value === cat ? 'bg-violet-500/10 text-violet-400' : 'text-gray-300 hover:bg-white/[0.04] hover:text-white'}`}>
@@ -90,7 +74,6 @@ function CategoryDropdown({ value, onChange }) {
                 <span className="truncate">{cat}</span>
               </button>
             ))}
-
             {!filtered.length && !showCreate && (
               <div className="px-3 py-4 text-center text-xs text-gray-600">No categories found</div>
             )}
@@ -118,17 +101,6 @@ export default function Dashboard() {
   const [runStatus, setRunStatus] = useState('Ready to scrape');
   const [stats, setStats] = useState(null);
   const [integrations, setIntegrations] = useState({ discord: false, sheets: false });
-  const [logs, setLogs] = useState([{ msg: 'Ready. Configure settings and run the scraper.', type: 'info' }]);
-  const [pipelineOpen, setPipelineOpen] = useState(true);
-
-  // Config
-  const [thresh32, setThresh32] = useState(100);
-  const [thresh64, setThresh64] = useState(200);
-  const [thresh128, setThresh128] = useState(500);
-  const [cap32, setCap32] = useState(true);
-  const [cap64, setCap64] = useState(true);
-  const [cap128, setCap128] = useState(true);
-  const [maxPages, setMaxPages] = useState(10);
   const [logs, setLogs] = useState([{ msg: 'Ready. Add products and hit Run.', type: 'info' }]);
 
   const [products, setProducts] = useState(DEFAULT_PRODUCTS);
@@ -147,15 +119,11 @@ export default function Dashboard() {
   const [optDiscord, setOptDiscord] = useState(true);
   const [excludes, setExcludes] = useState(['broken', 'for parts', 'untested', 'as-is', 'as is', 'not working', 'damaged']);
   const [newExclude, setNewExclude] = useState('');
-
   const [filterProduct, setFilterProduct] = useState('all');
   const logRef = useRef(null);
-  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
-  // Load auth + saved settings on mount
   useEffect(() => {
     (async () => {
-      let token = null;
       try {
         const res = await fetch('/api/config');
         const cfg = await res.json();
@@ -168,39 +136,9 @@ export default function Dashboard() {
           setAuthToken(session.access_token);
         }
       } catch (e) {}
-      try {
-        const res = await fetch('/api/status');
-        const data = await res.json();
-        setIntegrations(data);
-      } catch (e) {}
+      try { const res = await fetch('/api/status'); setIntegrations(await res.json()); } catch (e) {}
     })();
   }, [router]);
-
-  // Auto-save settings to Supabase when they change
-  useEffect(() => {
-    if (!settingsLoaded || !authToken) return;
-    const timeout = setTimeout(() => {
-      const capacities = [];
-      if (cap32) capacities.push('32GB');
-      if (cap64) capacities.push('64GB');
-      if (cap128) capacities.push('128GB');
-      const conditions = [];
-      if (condNew) conditions.push('new');
-      if (condUsed) conditions.push('used');
-      if (condRefurb) conditions.push('refurbished');
-
-      fetch('/api/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + authToken },
-        body: JSON.stringify({
-          thresholds: { '32GB': thresh32, '64GB': thresh64, '128GB': thresh128 },
-          capacities, conditions, excludeKeywords: excludes,
-          maxPages, sendToSheets: optSheets, sendToDiscord: optDiscord,
-        }),
-      }).catch(() => {});
-    }, 1000); // debounce 1s
-    return () => clearTimeout(timeout);
-  }, [thresh32, thresh64, thresh128, cap32, cap64, cap128, maxPages, condNew, condUsed, condRefurb, optSheets, optDiscord, excludes, authToken, settingsLoaded]);
 
   function log(msg, type = '') {
     setLogs(prev => [...prev, { msg: new Date().toLocaleTimeString() + '  ' + msg, type }]);
@@ -212,7 +150,6 @@ export default function Dashboard() {
     setProducts([...products, { name: newName.trim(), query: newQuery.trim(), maxPrice: newMaxPrice, category: newCategory }]);
     log(`Added: ${newName.trim()} (< $${newMaxPrice})`, 'info');
     setNewName(''); setNewQuery(''); setNewMaxPrice(100); setNewCategory('All Categories');
-    setShowAddProduct(false);
   }
 
   function addExclude() {
@@ -268,7 +205,6 @@ export default function Dashboard() {
           .glass-hover:hover { border-color: rgba(255,255,255,0.12); background: rgba(255,255,255,0.05); }
           .glow-btn { box-shadow: 0 0 20px var(--glow), 0 4px 12px rgba(0,0,0,0.3); }
           .glow-btn:hover { box-shadow: 0 0 30px var(--glow), 0 6px 16px rgba(0,0,0,0.4); }
-          .gradient-text { background: linear-gradient(135deg, #a78bfa, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
           .fade-in { animation: fadeIn 0.3s ease-out; }
           @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
           .stat-glow { position: relative; }
@@ -313,19 +249,19 @@ export default function Dashboard() {
         <section className="glass rounded-2xl p-6 mb-6 fade-in">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2.5">
-              <Package className="w-4.5 h-4.5 text-violet-400" />
+              <Package className="w-4 h-4 text-violet-400" />
               <h2 className="text-sm font-semibold text-white">Products</h2>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-400 font-semibold">{products.length}</span>
             </div>
             <button onClick={() => setShowAddProduct(!showAddProduct)}
               className="px-4 py-2 bg-violet-600/15 hover:bg-violet-600/25 text-violet-400 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 border border-violet-500/20">
-              <Plus className="w-3.5 h-3.5" /> Add Product
+              {showAddProduct ? <ChevronUp className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />} {showAddProduct ? 'Hide' : 'Add Product'}
             </button>
           </div>
 
+          {/* Add product form */}
           {showAddProduct && (
             <div className="bg-dark-surface2/80 rounded-2xl p-5 mb-5 border border-dark-border fade-in">
-              {/* eBay-style search bar */}
               <div className="flex items-center gap-0 bg-dark-bg rounded-xl border border-dark-border overflow-visible mb-4">
                 <div className="flex items-center gap-2 flex-1 px-4 py-3">
                   <Search className="w-4 h-4 text-gray-500 shrink-0" />
@@ -337,44 +273,6 @@ export default function Dashboard() {
                   <CategoryDropdown value={newCategory} onChange={setNewCategory} />
                 </div>
               </div>
-            </div>
-            <div className="mt-5">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Pages to Scan</h3>
-              <div className="flex items-center gap-3">
-                <input type="range" min={1} max={200} value={maxPages} onChange={e => setMaxPages(parseInt(e.target.value))} className="flex-1 accent-violet-500" />
-                <span className="text-sm font-semibold min-w-[70px]">{maxPages} pages</span>
-              </div>
-              <p className="text-[10px] text-gray-600 mt-1">~60 listings/page. Auto-stops when no more deals.</p>
-            </div>
-          </div>
-
-          {/* Filters */}
-          <div className="bg-dark-surface border border-dark-border rounded-xl p-6">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-4 flex items-center gap-2"><Filter className="w-3.5 h-3.5" /> Filters & Exclusions</h2>
-            <div className="mb-4">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Conditions</h3>
-              <div className="flex gap-4">
-                {[[condNew, setCondNew, 'New'], [condUsed, setCondUsed, 'Used'], [condRefurb, setCondRefurb, 'Refurbished']].map(([v, s, l]) => (
-                  <label key={l} className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input type="checkbox" checked={v} onChange={e => s(e.target.checked)} className="w-4 h-4 accent-violet-500" /> {l}
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div className="border-t border-dark-border pt-4 mb-4">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Exclude Keywords</h3>
-              <div className="flex flex-wrap gap-2 mb-2">
-                {excludes.map((kw, i) => (
-                  <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/25">
-                    {kw} <button onClick={() => removeExclude(i)} className="opacity-60 hover:opacity-100"><Trash2 className="w-3 h-3" /></button>
-                  </span>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <input type="text" value={newExclude} onChange={e => setNewExclude(e.target.value)} onKeyDown={e => e.key === 'Enter' && addExclude()} placeholder="Add keyword..."
-                  className="px-3 py-1.5 bg-dark-bg border border-dashed border-dark-border rounded-lg text-xs text-gray-200 outline-none focus:border-violet-500 w-32" />
-                <button onClick={addExclude} className="px-3 py-1.5 bg-dark-surface2 border border-dark-border rounded-lg text-xs text-gray-500 hover:text-white flex items-center gap-1"><Plus className="w-3 h-3" /> Add</button>
-
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="text-[10px] text-gray-500 uppercase tracking-widest block mb-1.5 font-bold">Display Name</label>
@@ -391,19 +289,19 @@ export default function Dashboard() {
                 </div>
                 <div className="flex items-end gap-2">
                   <button onClick={addProduct} className="flex-1 px-4 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white rounded-xl text-sm font-semibold transition-all glow-btn">Add</button>
-                  <button onClick={() => setShowAddProduct(false)} className="px-4 py-2.5 glass glass-hover text-gray-400 rounded-xl text-sm transition-all">Cancel</button>
                 </div>
               </div>
             </div>
           )}
 
+          {/* Product list */}
           <div className="space-y-2">
             {products.map((p, i) => (
               <div key={i} className="flex items-center justify-between bg-dark-bg/50 hover:bg-dark-surface2/80 rounded-xl px-5 py-3.5 group transition-all border border-transparent hover:border-dark-border">
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-semibold text-white">{p.name}</span>
                   <span className="text-[11px] text-gray-600 bg-dark-surface2 px-2 py-0.5 rounded-md">{p.category}</span>
-                  <span className="text-[11px] text-gray-600 italic hidden sm:inline">"{p.query}"</span>
+                  <span className="text-[11px] text-gray-600 italic hidden sm:inline">&quot;{p.query}&quot;</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-bold text-emerald-400">&lt; ${p.maxPrice}</span>
@@ -412,9 +310,7 @@ export default function Dashboard() {
                 </div>
               </div>
             ))}
-            {!products.length && (
-              <div className="text-center py-10 text-gray-600 text-sm">No products yet. Click <strong className="text-violet-400">Add Product</strong> above.</div>
-            )}
+            {!products.length && <div className="text-center py-10 text-gray-600 text-sm">No products yet. Click <strong className="text-violet-400">Add Product</strong> above.</div>}
           </div>
         </section>
 
@@ -442,9 +338,9 @@ export default function Dashboard() {
         {stats && (
           <div className="grid grid-cols-3 gap-4 mb-6 fade-in">
             {[
-              { v: stats.deals, l: 'Deals Found', c: 'text-emerald-400', bc: 'from-emerald-500/10 to-emerald-500/5', icon: TrendingDown },
-              { v: stats.scanned || 0, l: 'Scanned', c: 'text-blue-400', bc: 'from-blue-500/10 to-blue-500/5', icon: BarChart3 },
-              { v: cheapest, l: 'Best Price', c: 'text-violet-400', bc: 'from-violet-500/10 to-violet-500/5', icon: DollarSign },
+              { v: stats.deals, l: 'Deals Found', c: 'text-emerald-400', icon: TrendingDown },
+              { v: stats.scanned || 0, l: 'Scanned', c: 'text-blue-400', icon: BarChart3 },
+              { v: cheapest, l: 'Best Price', c: 'text-violet-400', icon: DollarSign },
             ].map((s, i) => (
               <div key={i} className="stat-glow glass rounded-2xl p-5 text-center">
                 <s.icon className={`w-5 h-5 mx-auto mb-2 ${s.c} opacity-70`} />
@@ -469,7 +365,7 @@ export default function Dashboard() {
                 ))}
               </div>
             </div>
-            <div className="overflow-x-auto max-h-[520px] overflow-y-auto">
+            <div className="overflow-x-auto max-h-[520px] overflow-y-auto scrollbar-thin">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-white/[0.02] sticky top-0 z-10 backdrop-blur-sm">
@@ -485,19 +381,13 @@ export default function Dashboard() {
                     const condColor = (d.condition || '').toLowerCase().includes('new') && !(d.condition || '').toLowerCase().includes('pre-owned') ? 'text-emerald-400 bg-emerald-500/10' : (d.condition || '').toLowerCase().includes('refurb') ? 'text-amber-400 bg-amber-500/10' : 'text-blue-400 bg-blue-500/10';
                     return (
                       <tr key={i} className="hover:bg-white/[0.02] border-t border-white/[0.03] transition-colors group">
-                        <td className="px-5 py-3.5">
-                          <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-violet-500/10 text-violet-400 border border-violet-500/10">{d.product}</span>
-                        </td>
+                        <td className="px-5 py-3.5"><span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-violet-500/10 text-violet-400 border border-violet-500/10">{d.product}</span></td>
                         <td className="px-5 py-3.5 max-w-[380px]">
-                          {hasLink
-                            ? <a href={d.link} target="_blank" rel="noreferrer" className="text-gray-200 hover:text-violet-400 transition-colors group-hover:underline decoration-violet-500/30 underline-offset-2" title={d.title}>{title}</a>
-                            : <span className="text-gray-400">{title}</span>}
+                          {hasLink ? <a href={d.link} target="_blank" rel="noreferrer" className="text-gray-200 hover:text-violet-400 transition-colors group-hover:underline decoration-violet-500/30 underline-offset-2" title={d.title}>{title}</a> : <span className="text-gray-400">{title}</span>}
                         </td>
                         <td className="px-5 py-3.5 font-bold text-emerald-400 whitespace-nowrap text-base">${d.price}</td>
                         <td className="px-5 py-3.5"><span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${condColor}`}>{d.condition || 'N/A'}</span></td>
-                        <td className="px-5 py-3.5">
-                          {hasLink && <a href={d.link} target="_blank" rel="noreferrer" className="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-violet-400 transition-all inline-flex items-center gap-1 text-xs"><ArrowUpRight className="w-3.5 h-3.5" /></a>}
-                        </td>
+                        <td className="px-5 py-3.5">{hasLink && <a href={d.link} target="_blank" rel="noreferrer" className="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-violet-400 transition-all"><ArrowUpRight className="w-3.5 h-3.5" /></a>}</td>
                       </tr>
                     );
                   })}
@@ -514,7 +404,7 @@ export default function Dashboard() {
           </section>
         ) : null}
 
-        {/* SETTINGS */}
+        {/* FILTERS & SETTINGS */}
         <button onClick={() => setShowFilters(!showFilters)}
           className="w-full glass glass-hover rounded-2xl px-6 py-4 mb-3 flex items-center justify-between transition-all">
           <div className="flex items-center gap-2.5">
@@ -552,7 +442,7 @@ export default function Dashboard() {
               <h3 className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3">Exclude Keywords</h3>
               <div className="flex flex-wrap gap-2 mb-3">
                 {excludes.map((kw, i) => (
-                  <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-red-500/8 text-red-400 border border-red-500/15">
+                  <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/15">
                     {kw} <button onClick={() => setExcludes(excludes.filter((_, j) => j !== i))} className="opacity-40 hover:opacity-100 transition-opacity"><X className="w-3 h-3" /></button>
                   </span>
                 ))}
@@ -578,7 +468,7 @@ export default function Dashboard() {
           <div className="px-6 py-3 border-b border-white/5">
             <h2 className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Activity Log</h2>
           </div>
-          <div ref={logRef} className="px-5 py-3 font-mono text-[11px] max-h-32 overflow-y-auto space-y-0.5">
+          <div ref={logRef} className="px-5 py-3 font-mono text-[11px] max-h-32 overflow-y-auto space-y-0.5 scrollbar-thin">
             {logs.map((l, i) => (
               <div key={i} className={l.type === 'ok' ? 'text-emerald-400' : l.type === 'err' ? 'text-red-400' : l.type === 'info' ? 'text-blue-400/70' : 'text-gray-600'}>{l.msg}</div>
             ))}
