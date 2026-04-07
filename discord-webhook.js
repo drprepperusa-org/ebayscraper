@@ -51,9 +51,11 @@ class DiscordWebhook {
 
     topDeals.forEach((deal, idx) => {
       const title = deal.title.length > 80 ? deal.title.substring(0, 77) + '...' : deal.title;
-      description += `**#${idx + 1}** — **$${deal.price}**\n`;
+      const stickLabel = deal.stickCount > 1 ? `(${deal.stickCount}x)` : '(1x)';
+      const perStick = deal.perStickCost || deal.price;
+      description += `**#${idx + 1}** - **$${perStick}/stick** ${stickLabel}\n`;
       description += `[${title}](${deal.link})\n`;
-      description += `${deal.condition}\n\n`;
+      description += `Price: $${deal.price} | ${deal.condition}\n\n`;
     });
 
     if (deals.length > 5) {
