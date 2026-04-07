@@ -40,6 +40,7 @@ export default async function handler(req, res) {
       thresholds: body.thresholds,
       capacities: body.capacities,
       conditions: body.conditions,
+      search_queries: body.searchQueries,
       max_pages: body.maxPages,
       send_to_sheets: body.sendToSheets,
       send_to_discord: body.sendToDiscord,

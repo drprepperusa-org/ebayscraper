@@ -204,17 +204,21 @@ async function fetchAndParse(url, capacity, options) {
   return parseListings(html, capacity, options);
 }
 
-async function scrapeCapacity(capacity, options) {
+// searchQuery: { query: 'DDR4 32GB ECC', capacity: '32GB' }
+async function scrapeQuery(searchQuery, options) {
   const thresholds = options.thresholds || DEFAULT_THRESHOLDS;
   const maxPages = options.maxPages || 10;
+  const capacity = searchQuery.capacity || '32GB';
+  const queryText = searchQuery.query || `DDR4 ${capacity}`;
+  const encodedQuery = encodeURIComponent(queryText);
   const deals = [];
   let scanned = 0;
 
   for (let page = 1; page <= maxPages; page++) {
-    const url = `https://www.ebay.com/sch/i.html?_nkw=DDR4+${capacity}&_sop=2&rt=nc&LH_BIN=1&_pgn=${page}`;
+    const url = `https://www.ebay.com/sch/i.html?_nkw=${encodedQuery}&_sop=2&rt=nc&LH_BIN=1&_pgn=${page}`;
 
     try {
-      console.log(`${capacity}: page ${page}...`);
+      console.log(`[${queryText}] page ${page}...`);
       const result = await fetchAndParse(url, capacity, { thresholds, ...options });
 
       scanned += result.listingsOnPage;
@@ -222,47 +226,52 @@ async function scrapeCapacity(capacity, options) {
       console.log(`  => ${result.listingsOnPage} listings, ${result.deals.length} deals`);
 
       if (result.listingsOnPage === 0) {
-        console.log(`${capacity}: no more results, done`);
+        console.log(`[${queryText}] no more results, done`);
         break;
       }
 
       if (result.deals.length === 0 && page > 1) {
-        console.log(`${capacity}: prices above threshold, done`);
+        console.log(`[${queryText}] prices above threshold, done`);
         break;
       }
 
-      // Shorter delay on CI, longer locally
       if (USE_BROWSER) await delay(process.env.CI ? 500 : 1500);
     } catch (err) {
-      console.error(`${capacity} page ${page} error: ${err.message}`);
+      console.error(`[${queryText}] page ${page} error: ${err.message}`);
       break;
     }
   }
 
-  console.log(`${capacity}: total ${deals.length} deals from ${scanned} listings`);
-  return { capacity, deals, scanned };
+  console.log(`[${queryText}] total ${deals.length} deals from ${scanned} listings`);
+  return { query: queryText, capacity, deals, scanned };
 }
 
+const DEFAULT_SEARCH_QUERIES = [
+  { query: 'DDR4 32GB', capacity: '32GB' },
+  { query: 'DDR4 64GB', capacity: '64GB' },
+  { query: 'DDR4 128GB', capacity: '128GB' },
+];
+
 async function scrapeEbay(options = {}) {
-  const capacities = options.capacities || DEFAULT_CAPACITIES;
+  const searchQueries = options.searchQueries || DEFAULT_SEARCH_QUERIES;
   const seenLinks = new Set();
   let allDeals = [];
   let totalScanned = 0;
 
-  // Parallel on Vercel (fast axios), sequential locally (browser)
-  let capacityResults;
+  // Sequential locally (browser), parallel on Vercel (axios)
+  let queryResults;
   if (USE_BROWSER) {
-    capacityResults = [];
-    for (const capacity of capacities) {
-      capacityResults.push(await scrapeCapacity(capacity, options));
+    queryResults = [];
+    for (const sq of searchQueries) {
+      queryResults.push(await scrapeQuery(sq, options));
     }
   } else {
-    capacityResults = await Promise.all(
-      capacities.map(capacity => scrapeCapacity(capacity, options))
+    queryResults = await Promise.all(
+      searchQueries.map(sq => scrapeQuery(sq, options))
     );
   }
 
-  for (const result of capacityResults) {
+  for (const result of queryResults) {
     totalScanned += result.scanned;
     for (const deal of result.deals) {
       if (deal.link === 'N/A' || !seenLinks.has(deal.link)) {
@@ -270,7 +279,7 @@ async function scrapeEbay(options = {}) {
         allDeals.push(deal);
       }
     }
-    console.log(`${result.capacity}: ${result.deals.length} deals from ${result.scanned} listings`);
+    console.log(`[${result.query}] ${result.deals.length} deals from ${result.scanned} listings`);
   }
 
   await closeBrowser();
@@ -321,7 +330,7 @@ async function scrapeAndNotify(options = {}) {
   return { deals: allDeals.length, scanned, results: allDeals, sheetsStatus, discordStatus };
 }
 
-module.exports = { scrapeAndNotify, DEFAULT_THRESHOLDS, DEFAULT_CAPACITIES, DEFAULT_EXCLUDE_KEYWORDS, DEFAULT_CONDITIONS };
+module.exports = { scrapeAndNotify, DEFAULT_THRESHOLDS, DEFAULT_CAPACITIES, DEFAULT_EXCLUDE_KEYWORDS, DEFAULT_CONDITIONS, DEFAULT_SEARCH_QUERIES };
 
 if (require.main === module) {
   scrapeAndNotify()

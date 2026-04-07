@@ -37,6 +37,13 @@ export default function Dashboard() {
   const [optDiscord, setOptDiscord] = useState(true);
   const [excludes, setExcludes] = useState([]);
   const [newExclude, setNewExclude] = useState('');
+  const [searchQueries, setSearchQueries] = useState([
+    { query: 'DDR4 32GB', capacity: '32GB' },
+    { query: 'DDR4 64GB', capacity: '64GB' },
+    { query: 'DDR4 128GB', capacity: '128GB' },
+  ]);
+  const [newQuery, setNewQuery] = useState('');
+  const [newQueryCapacity, setNewQueryCapacity] = useState('32GB');
 
   const logRef = useRef(null);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
@@ -81,6 +88,7 @@ export default function Dashboard() {
               setCondRefurb(s.conditions.includes('refurbished'));
             }
             if (s.exclude_keywords) setExcludes(s.exclude_keywords);
+            if (s.search_queries && s.search_queries.length > 0) setSearchQueries(s.search_queries);
             if (s.max_pages != null) setMaxPages(s.max_pages);
             if (s.send_to_sheets != null) setOptSheets(s.send_to_sheets);
             if (s.send_to_discord != null) setOptDiscord(s.send_to_discord);
@@ -119,13 +127,13 @@ export default function Dashboard() {
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + authToken },
         body: JSON.stringify({
           thresholds: { '32GB': thresh32, '64GB': thresh64, '128GB': thresh128 },
-          capacities, conditions, excludeKeywords: excludes,
+          capacities, conditions, excludeKeywords: excludes, searchQueries,
           maxPages, sendToSheets: optSheets, sendToDiscord: optDiscord,
         }),
       }).catch(() => {});
-    }, 1000); // debounce 1s
+    }, 1000);
     return () => clearTimeout(timeout);
-  }, [thresh32, thresh64, thresh128, cap32, cap64, cap128, maxPages, condNew, condUsed, condRefurb, optSheets, optDiscord, excludes, authToken, settingsLoaded]);
+  }, [thresh32, thresh64, thresh128, cap32, cap64, cap128, maxPages, condNew, condUsed, condRefurb, optSheets, optDiscord, excludes, searchQueries, authToken, settingsLoaded]);
 
   async function loadResults() {
     try {
@@ -309,14 +317,32 @@ export default function Dashboard() {
               ))}
             </div>
             <div className="mt-5">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Capacities to Search</h3>
-              <div className="flex gap-5">
-                {[[cap32, setCap32, '32GB'], [cap64, setCap64, '64GB'], [cap128, setCap128, '128GB']].map(([v, s, l]) => (
-                  <label key={l} className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input type="checkbox" checked={v} onChange={e => s(e.target.checked)} className="w-4 h-4 accent-violet-500" /> {l}
-                  </label>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3 flex items-center gap-2"><Search className="w-3.5 h-3.5" /> Search Queries</h3>
+              <div className="space-y-2 mb-3">
+                {searchQueries.map((sq, i) => (
+                  <div key={i} className="flex items-center gap-2 bg-dark-surface2 rounded-lg px-3 py-2">
+                    <Search className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                    <span className="flex-1 text-sm text-white">{sq.query}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-400 font-semibold">{sq.capacity}</span>
+                    <button onClick={() => setSearchQueries(searchQueries.filter((_, j) => j !== i))} className="text-gray-600 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
+                  </div>
                 ))}
               </div>
+              <div className="flex gap-2">
+                <input type="text" value={newQuery} onChange={e => setNewQuery(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && newQuery.trim()) { setSearchQueries([...searchQueries, { query: newQuery.trim(), capacity: newQueryCapacity }]); setNewQuery(''); } }}
+                  placeholder="e.g. DDR4 32GB ECC server"
+                  className="flex-1 px-3 py-2 bg-dark-bg border border-dark-border rounded-lg text-sm text-white outline-none focus:border-violet-500 placeholder:text-gray-600" />
+                <select value={newQueryCapacity} onChange={e => setNewQueryCapacity(e.target.value)}
+                  className="px-2 py-2 bg-dark-bg border border-dark-border rounded-lg text-sm text-white outline-none focus:border-violet-500">
+                  <option value="32GB">32GB</option>
+                  <option value="64GB">64GB</option>
+                  <option value="128GB">128GB</option>
+                </select>
+                <button onClick={() => { if (newQuery.trim()) { setSearchQueries([...searchQueries, { query: newQuery.trim(), capacity: newQueryCapacity }]); setNewQuery(''); } }}
+                  className="px-3 py-2 bg-violet-600/15 hover:bg-violet-600/25 text-violet-400 rounded-lg text-xs font-semibold border border-violet-500/20 flex items-center gap-1"><Plus className="w-3.5 h-3.5" /> Add</button>
+              </div>
+              <p className="text-[10px] text-gray-600 mt-2">Each query searches eBay with your exact keywords. Select capacity tier for threshold matching.</p>
             </div>
             <div className="mt-5">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Pages to Scan</h3>
