@@ -1,0 +1,9 @@
+{
+  "name": "eBay DDR4 RAM Scraper",
+  "kind": "every",
+  "everyMs": 3600000,
+  "description": "Hourly scraper for DDR4 RAM deals under price thresholds",
+  "command": "cd /Users/djmac/.openclaw/workspace/ebay-ram-scraper && node scraper.js",
+  "notify-channel": "1489711525571727520",
+  "model": "anthropic/claude-haiku-4-5"
+}

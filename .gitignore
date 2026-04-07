@@ -1,0 +1,16 @@
+node_modules/
+deals.db
+.env
+.env.local
+*.log
+npm-debug.log
+.DS_Store
+dist/
+build/
+*.swp
+*.swo
+*~
+.env.test
+.vercel
+
+.vercel
