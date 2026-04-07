@@ -5,8 +5,9 @@
   "main": "scraper.js",
   "type": "commonjs",
   "scripts": {
-    "start": "node scraper.js",
-    "dev": "node scraper.js",
+    "start": "node -e \"require('dotenv').config(); require('./scraper').scrapeAndNotify()\"",
+    "dev": "node server.js",
+    "scrape": "node -e \"require('dotenv').config(); require('./scraper').scrapeAndNotify()\"",
     "test": "echo 'No tests configured'"
   },
   "dependencies": {

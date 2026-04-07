@@ -38,10 +38,11 @@ class GoogleSheetsClient {
 
   getAuthClient() {
     const { token, creds } = this.credentials;
+    const config = creds.installed || creds.web;
     const oauth2Client = new google.auth.OAuth2(
-      creds.installed.client_id,
-      creds.installed.client_secret,
-      creds.installed.redirect_uris[0]
+      config.client_id,
+      config.client_secret,
+      (config.redirect_uris && config.redirect_uris[0]) || 'http://localhost:3333'
     );
 
     oauth2Client.setCredentials(token);
