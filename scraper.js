@@ -190,7 +190,7 @@ async function scrapeEbay(options = {}) {
       const endPage = Math.min(startPage + BATCH_SIZE - 1, maxPages);
       const urls = [];
       for (let p = startPage; p <= endPage; p++) {
-        urls.push(`https://www.ebay.com/sch/i.html?_nkw=DDR4+${capacity}&_sop=15&rt=nc&_pgn=${p}`);
+        urls.push(`https://www.ebay.com/sch/i.html?_nkw=DDR4+${capacity}&_sop=15&rt=nc&LH_BIN=1&_pgn=${p}`);
       }
 
       console.log(`${capacity}: fetching pages ${startPage}-${endPage}...`);
