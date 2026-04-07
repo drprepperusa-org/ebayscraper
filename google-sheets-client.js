@@ -77,11 +77,11 @@ class GoogleSheetsClient {
 
     const rows = deals.map(deal => [
       deal.timestamp,
-      deal.capacity,
+      deal.product || deal.capacity || '',
       deal.title,
       deal.price,
-      deal.stickCount,
-      deal.perStickCost,
+      deal.maxPrice || deal.stickCount || '',
+      deal.category || deal.perStickCost || '',
       deal.condition,
       deal.seller,
       deal.link,

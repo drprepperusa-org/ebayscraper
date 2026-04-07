@@ -1,14 +1,12 @@
-const { scrapeAndNotify, DEFAULT_THRESHOLDS, DEFAULT_CAPACITIES, DEFAULT_EXCLUDE_KEYWORDS, DEFAULT_CONDITIONS } = require('../../scraper');
+const { scrapeAndNotify, DEFAULT_PRODUCTS, DEFAULT_EXCLUDE_KEYWORDS, DEFAULT_CONDITIONS } = require('../../scraper');
 const { verifyAuth } = require('../../lib/auth');
 
 export default async function handler(req, res) {
-  // Auth check (skipped if Supabase not configured)
   const auth = await verifyAuth(req);
   if (!auth.authenticated) {
     return res.status(401).json({ success: false, error: 'Unauthorized: ' + auth.error });
   }
 
-  // Cron jobs use GET with Bearer token
   if (req.method === 'GET') {
     const cronSecret = process.env.CRON_SECRET;
     if (cronSecret && req.headers.authorization !== `Bearer ${cronSecret}`) {
@@ -22,15 +20,13 @@ export default async function handler(req, res) {
     }
   }
 
-  // UI uses POST with custom config
   if (req.method === 'POST') {
     const body = req.body || {};
     const options = {
-      thresholds: body.thresholds || DEFAULT_THRESHOLDS,
-      capacities: body.capacities || DEFAULT_CAPACITIES,
+      products: body.products || DEFAULT_PRODUCTS,
       conditions: body.conditions || DEFAULT_CONDITIONS,
       excludeKeywords: body.excludeKeywords || DEFAULT_EXCLUDE_KEYWORDS,
-      maxPages: body.maxPages || 1000,
+      maxPages: body.maxPages || 50,
       sendToSheets: body.sendToSheets !== false,
       sendToDiscord: body.sendToDiscord !== false,
     };
