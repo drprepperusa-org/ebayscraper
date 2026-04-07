@@ -32,15 +32,32 @@ jobs:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
           GOOGLE_TOKEN: ${{ secrets.GOOGLE_TOKEN }}
           CHROME_PATH: /usr/bin/google-chrome
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           node -e "
             require('dotenv').config();
             process.env.CHROME_PATH = process.env.CHROME_PATH || '/usr/bin/google-chrome';
             const { scrapeAndNotify } = require('./scraper');
             scrapeAndNotify({ sendToSheets: false, sendToDiscord: true, maxPages: 10 })
-              .then(r => {
+              .then(async (r) => {
                 console.log('Deals:', r.deals, '| Scanned:', r.scanned);
                 console.log('Discord:', r.discordStatus);
+
+                // Save results to Supabase so the web dashboard can display them
+                const url = process.env.SUPABASE_URL;
+                const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+                if (url && key) {
+                  const { createClient } = require('@supabase/supabase-js');
+                  const sb = createClient(url, key);
+                  const { error } = await sb.from('scrape_results').insert({
+                    deals: r.deals,
+                    scanned: r.scanned,
+                    results: r.results || [],
+                  });
+                  if (error) console.error('Supabase save error:', error.message);
+                  else console.log('Results saved to Supabase');
+                }
               })
               .catch(e => { console.error(e); process.exit(1); });
           "

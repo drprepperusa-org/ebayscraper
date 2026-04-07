@@ -95,6 +95,9 @@ export default function Dashboard() {
         const data = await res.json();
         setIntegrations(data);
       } catch (e) {}
+
+      // Load latest scrape results from Supabase
+      loadResults();
     })();
   }, [router]);
 
@@ -123,6 +126,20 @@ export default function Dashboard() {
     }, 1000); // debounce 1s
     return () => clearTimeout(timeout);
   }, [thresh32, thresh64, thresh128, cap32, cap64, cap128, maxPages, condNew, condUsed, condRefurb, optSheets, optDiscord, excludes, authToken, settingsLoaded]);
+
+  async function loadResults() {
+    try {
+      const res = await fetch('/api/results');
+      const data = await res.json();
+      if (data.results && data.results.length > 0) {
+        setLastResults(data.results);
+        setStats({ deals: data.deals, scanned: data.scanned, results: data.results });
+        const time = new Date(data.timestamp).toLocaleTimeString();
+        setStatusBadge(data.deals + ' deals');
+        setRunStatus('Last scrape: ' + data.deals + ' deals at ' + time);
+      }
+    } catch (e) {}
+  }
 
   function log(msg, type = '') {
     setLogs(prev => [...prev, { msg: new Date().toLocaleTimeString() + '  ' + msg, type }]);
@@ -168,8 +185,9 @@ export default function Dashboard() {
           if (status.status === 'completed') {
             clearInterval(poll);
             if (status.conclusion === 'success') {
-              log('Scrape completed! Deals sent to Discord.', 'ok');
-              setStatusBadge('Done'); setRunStatus('Completed — check Discord for deals');
+              log('Scrape completed! Loading results...', 'ok');
+              await loadResults();
+              log('Results loaded. Also sent to Discord.', 'ok');
             } else {
               log('Workflow failed: ' + status.conclusion, 'err');
               setStatusBadge('Failed'); setRunStatus('Workflow failed');
