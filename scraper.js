@@ -162,8 +162,18 @@ function parseGenericListings(html, product, options = {}) {
   return { deals, listingsOnPage: $listings.length };
 }
 
-async function scrapeProduct(product, options = {}) {
-  const maxPages = options.maxPages || 50;
+// Fetch a single page and parse it
+async function fetchAndParse(url, capacity, options) {
+  const html = await fetchEbayPage(url);
+  const result = parseListings(html, capacity, options);
+  return result;
+}
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function scrapeCapacity(capacity, options) {
+  const thresholds = options.thresholds || DEFAULT_THRESHOLDS;
+  const maxPages = options.maxPages || 10;
   const deals = [];
   let scanned = 0;
 
