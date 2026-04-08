@@ -177,9 +177,13 @@ export default function Dashboard() {
 
   async function loadResults(tokenOverride) {
     try {
-      const tk = tokenOverride || authToken;
-      const headers = {};
-      if (tk) headers['Authorization'] = 'Bearer ' + tk;
+      let tk = tokenOverride || authToken;
+      if (!tk && sb) {
+        const { data: { session } } = await sb.auth.getSession();
+        if (session) { tk = session.access_token; setAuthToken(tk); }
+      }
+      if (!tk) return;
+      const headers = { Authorization: 'Bearer ' + tk };
       const res = await fetch('/api/results', { headers });
       const data = await res.json();
       if (data.results && data.results.length > 0) {
@@ -195,9 +199,19 @@ export default function Dashboard() {
   async function loadHistory(tokenOverride) {
     try {
       const tk = tokenOverride || authToken;
-      const headers = {};
-      if (tk) headers['Authorization'] = 'Bearer ' + tk;
-      const res = await fetch('/api/results?all=true', { headers });
+      if (!tk) {
+        // Try to get fresh token from Supabase
+        if (sb) {
+          const { data: { session } } = await sb.auth.getSession();
+          if (session) {
+            const freshToken = session.access_token;
+            setAuthToken(freshToken);
+            return loadHistory(freshToken);
+          }
+        }
+        return;
+      }
+      const res = await fetch('/api/results?all=true', { headers: { Authorization: 'Bearer ' + tk } });
       const data = await res.json();
       const allResults = [];
       (data.history || []).forEach(run => {
