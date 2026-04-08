@@ -44,6 +44,27 @@ export default async function handler(req, res) {
     return res.status(200).json({ product: data[0] });
   }
 
+  // PUT — update own product
+  if (req.method === 'PUT') {
+    const { id, query, maxPrice, type } = req.body;
+    if (!id) return res.status(400).json({ error: 'id is required' });
+
+    const updates = {};
+    if (query !== undefined) updates.query = query;
+    if (maxPrice !== undefined) updates.max_price = maxPrice;
+    if (type !== undefined) updates.type = type;
+
+    const { data, error } = await supabase
+      .from('products')
+      .update(updates)
+      .eq('id', id)
+      .eq('created_by', user.id)
+      .select();
+
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(200).json({ product: data?.[0] });
+  }
+
   // DELETE — remove only own product
   if (req.method === 'DELETE') {
     const { id } = req.body || {};

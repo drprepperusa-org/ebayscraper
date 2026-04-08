@@ -5,7 +5,7 @@ import Head from 'next/head';
 import {
   Search, LogOut, Play, Download, ChevronRight, Settings, Zap,
   Filter, Bell, FileSpreadsheet, MessageSquare, Clock, Trash2,
-  Plus, BarChart3, DollarSign, Cpu, TrendingDown, ExternalLink
+  Plus, BarChart3, DollarSign, Cpu, TrendingDown, ExternalLink, Pencil, Check, X
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -39,6 +39,10 @@ export default function Dashboard() {
   const [newMaxPrice, setNewMaxPrice] = useState(100);
   const [newType, setNewType] = useState('general');
   const [discordWebhook, setDiscordWebhook] = useState('');
+  const [editIdx, setEditIdx] = useState(null);
+  const [editQuery, setEditQuery] = useState('');
+  const [editMaxPrice, setEditMaxPrice] = useState(0);
+  const [editType, setEditType] = useState('general');
 
   const logRef = useRef(null);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
@@ -173,6 +177,32 @@ export default function Dashboard() {
     }
     setSearchQueries(searchQueries.filter((_, j) => j !== idx));
     log('Removed: ' + product.query, 'info');
+  }
+
+  function startEdit(idx) {
+    const sq = searchQueries[idx];
+    setEditIdx(idx);
+    setEditQuery(sq.query);
+    setEditMaxPrice(sq.maxPrice);
+    setEditType(sq.type);
+  }
+
+  async function saveEdit() {
+    if (editIdx === null) return;
+    const product = searchQueries[editIdx];
+    if (product.id) {
+      const headers = { 'Content-Type': 'application/json' };
+      if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
+      await fetch('/api/products', {
+        method: 'PUT', headers,
+        body: JSON.stringify({ id: product.id, query: editQuery, maxPrice: editMaxPrice, type: editType }),
+      }).catch(() => {});
+    }
+    const updated = [...searchQueries];
+    updated[editIdx] = { ...updated[editIdx], query: editQuery, maxPrice: editMaxPrice, type: editType };
+    setSearchQueries(updated);
+    setEditIdx(null);
+    log('Updated: ' + editQuery, 'ok');
   }
 
   async function loadResults(tokenOverride) {
@@ -379,13 +409,42 @@ export default function Dashboard() {
             <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-4 flex items-center gap-2"><Search className="w-3.5 h-3.5" /> Products to Search</h2>
             <div className="space-y-2 mb-4">
               {searchQueries.map((sq, i) => (
-                <div key={i} className="flex items-center gap-2 bg-dark-surface2 rounded-lg px-3 py-2.5">
-                  <Search className="w-3.5 h-3.5 text-gray-500 shrink-0" />
-                  <span className="flex-1 text-sm text-white font-medium">{sq.query}</span>
-                  <span className="text-xs text-emerald-400 font-semibold whitespace-nowrap">&lt; ${sq.maxPrice}</span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${sq.type === 'ram' ? 'bg-violet-500/15 text-violet-400' : 'bg-blue-500/15 text-blue-400'}`}>{sq.type === 'ram' ? 'RAM ($/stick)' : 'General'}</span>
-                  <button onClick={() => removeProduct(i)} className="text-gray-600 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
-                </div>
+                editIdx === i ? (
+                  <div key={i} className="bg-dark-surface2 rounded-lg px-3 py-3 space-y-2 border border-violet-500/30">
+                    <input type="text" value={editQuery} onChange={e => setEditQuery(e.target.value)}
+                      className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-lg text-sm text-white outline-none focus:border-violet-500" />
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <label className="text-[10px] text-gray-500 uppercase">Max Price ($)</label>
+                        <input type="number" value={editMaxPrice} onChange={e => setEditMaxPrice(parseInt(e.target.value) || 0)} min={1}
+                          className="w-full px-3 py-1.5 bg-dark-bg border border-dark-border rounded-lg text-sm text-white outline-none focus:border-violet-500 mt-1" />
+                      </div>
+                      {isAdmin && (
+                        <div className="flex-1">
+                          <label className="text-[10px] text-gray-500 uppercase">Type</label>
+                          <select value={editType} onChange={e => setEditType(e.target.value)}
+                            className="w-full px-3 py-1.5 bg-dark-bg border border-dark-border rounded-lg text-sm text-white outline-none focus:border-violet-500 mt-1">
+                            <option value="general">General</option>
+                            <option value="ram">RAM ($/stick)</option>
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={saveEdit} className="flex-1 py-1.5 bg-emerald-600/20 text-emerald-400 rounded-lg text-xs font-semibold flex items-center justify-center gap-1"><Check className="w-3.5 h-3.5" /> Save</button>
+                      <button onClick={() => setEditIdx(null)} className="flex-1 py-1.5 bg-dark-bg border border-dark-border text-gray-500 rounded-lg text-xs font-semibold flex items-center justify-center gap-1"><X className="w-3.5 h-3.5" /> Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div key={i} className="flex items-center gap-2 bg-dark-surface2 rounded-lg px-3 py-2.5">
+                    <Search className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                    <span className="flex-1 text-sm text-white font-medium">{sq.query}</span>
+                    <span className="text-xs text-emerald-400 font-semibold whitespace-nowrap">&lt; ${sq.maxPrice}</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${sq.type === 'ram' ? 'bg-violet-500/15 text-violet-400' : 'bg-blue-500/15 text-blue-400'}`}>{sq.type === 'ram' ? 'RAM ($/stick)' : 'General'}</span>
+                    <button onClick={() => startEdit(i)} className="text-gray-600 hover:text-violet-400"><Pencil className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => removeProduct(i)} className="text-gray-600 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
+                  </div>
+                )
               ))}
             </div>
             <div className="bg-dark-surface2 rounded-lg p-4">
