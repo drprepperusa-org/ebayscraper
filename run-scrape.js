@@ -48,13 +48,27 @@ async function main() {
     console.log('Conditions:', conditions.join(', '));
     console.log('Discord webhook:', userWebhook ? 'set' : 'using default');
 
-    // Override Discord webhook for this user if they have one
+    // Each user only gets Discord if they have their own webhook set
+    // Admin uses the default DISCORD_WEBHOOK_URL env var
     const origWebhook = process.env.DISCORD_WEBHOOK_URL;
-    if (userWebhook) process.env.DISCORD_WEBHOOK_URL = userWebhook;
+    let sendDiscord = false;
+
+    // Check if user is admin (has 'admin' role in profiles or user_metadata)
+    const { data: profile } = await sb.from('profiles').select('role').eq('id', uid).single();
+    const isAdmin = profile?.role === 'admin';
+
+    if (userWebhook) {
+      process.env.DISCORD_WEBHOOK_URL = userWebhook;
+      sendDiscord = true;
+    } else if (isAdmin && origWebhook) {
+      // Admin uses the default env webhook
+      sendDiscord = true;
+    }
+    // Customers without a webhook get no Discord alerts
 
     const r = await scrapeAndNotify({
       sendToSheets: false,
-      sendToDiscord: true,
+      sendToDiscord: sendDiscord,
       maxPages,
       searchQueries,
       excludeKeywords,
