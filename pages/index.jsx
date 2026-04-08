@@ -106,13 +106,13 @@ export default function Dashboard() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + authToken },
         body: JSON.stringify({
-          conditions, excludeKeywords: excludes, searchQueries,
+          conditions, excludeKeywords: excludes,
           maxPages, sendToSheets: optSheets, sendToDiscord: optDiscord,
         }),
       }).catch(() => {});
     }, 1000);
     return () => clearTimeout(timeout);
-  }, [maxPages, condNew, condUsed, condRefurb, optSheets, optDiscord, excludes, searchQueries, authToken, settingsLoaded]);
+  }, [maxPages, condNew, condUsed, condRefurb, optSheets, optDiscord, excludes, authToken, settingsLoaded]);
 
   async function loadProducts() {
     try {
