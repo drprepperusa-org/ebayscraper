@@ -199,17 +199,14 @@ export default function Dashboard() {
       if (tk) headers['Authorization'] = 'Bearer ' + tk;
       const res = await fetch('/api/results?all=true', { headers });
       const data = await res.json();
-      if (data.history) {
-        // Merge all results from all runs into one flat list
-        const allResults = [];
-        data.history.forEach(run => {
-          (run.results || []).forEach(deal => {
-            allResults.push({ ...deal, scrapeDate: run.created_at });
-          });
+      const allResults = [];
+      (data.history || []).forEach(run => {
+        (run.results || []).forEach(deal => {
+          allResults.push({ ...deal, scrapeDate: run.created_at });
         });
-        setHistory(allResults);
-        setShowHistory(true);
-      }
+      });
+      setHistory(allResults);
+      setShowHistory(true);
     } catch (e) {}
   }
 
@@ -520,7 +517,7 @@ export default function Dashboard() {
         )}
 
         {/* Results */}
-        {lastResults.length > 0 ? (
+        {(lastResults.length > 0 || showHistory) ? (
           <div className="bg-dark-surface border border-dark-border rounded-xl p-6 mb-5">
             <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
               <div>
