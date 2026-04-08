@@ -130,6 +130,13 @@ function parseListings(html, searchQuery, options = {}) {
       const title = cleanTitle(rawTitle);
       if (!title || title.length < 5) return;
 
+      // Relevance check: title must contain all key words from search query
+      const queryWords = searchQuery.query.toLowerCase().split(/\s+/).filter(w => w.length >= 2);
+      const titleLowerCheck = title.toLowerCase();
+      const matchCount = queryWords.filter(w => titleLowerCheck.includes(w)).length;
+      // Require at least 70% of query words to match (e.g. 3 of 4 words)
+      if (queryWords.length > 0 && matchCount / queryWords.length < 0.7) return;
+
       // Skip auctions
       const fullText = $el.text().toLowerCase();
       const auctionPatterns = ['starting at', 'current bid', 'bid now', 'place bid', ' bids'];
