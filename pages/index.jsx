@@ -176,7 +176,9 @@ export default function Dashboard() {
 
   async function loadResults() {
     try {
-      const res = await fetch('/api/results');
+      const headers = {};
+      if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
+      const res = await fetch('/api/results', { headers });
       const data = await res.json();
       if (data.results && data.results.length > 0) {
         setLastResults(data.results);
@@ -190,7 +192,9 @@ export default function Dashboard() {
 
   async function loadHistory() {
     try {
-      const res = await fetch('/api/results?all=true');
+      const headers = {};
+      if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
+      const res = await fetch('/api/results?all=true', { headers });
       const data = await res.json();
       if (data.history) {
         // Merge all results from all runs into one flat list
