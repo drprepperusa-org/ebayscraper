@@ -36,7 +36,7 @@ class DiscordWebhook {
 
   _groupByProduct(deals) {
     return deals.reduce((acc, deal) => {
-      const key = deal.product || deal.capacity || 'Unknown';
+      const key = deal.searchQuery || deal.product || deal.capacity || 'Unknown';
       if (!acc[key]) acc[key] = [];
       acc[key].push(deal);
       return acc;
@@ -44,22 +44,30 @@ class DiscordWebhook {
   }
 
   _buildEmbed(product, deals) {
-    const topDeals = deals.slice(0, 5);
+    const topDeals = deals.slice(0, 10);
     const maxPrice = deals[0]?.maxPrice || '?';
+    const isRAM = deals[0]?.type === 'ram';
+    const priceLabel = isRAM ? '/stick' : '';
 
-    let description = `Found **${deals.length}** deals under $${maxPrice}\n\n`;
+    let description = `Found **${deals.length}** deals under $${maxPrice}${priceLabel}\n\n`;
 
     topDeals.forEach((deal, idx) => {
       const title = deal.title.length > 80 ? deal.title.substring(0, 77) + '...' : deal.title;
-      const stickLabel = deal.stickCount > 1 ? `(${deal.stickCount}x)` : '(1x)';
-      const perStick = deal.perStickCost || deal.price;
-      description += `**#${idx + 1}** - **$${perStick}/stick** ${stickLabel}\n`;
-      description += `[${title}](${deal.link})\n`;
-      description += `Price: $${deal.price} | ${deal.condition}\n\n`;
+      if (isRAM) {
+        const stickLabel = deal.stickCount > 1 ? `(${deal.stickCount}x)` : '(1x)';
+        const perStick = deal.perStickCost || deal.price;
+        description += `**#${idx + 1}** - **$${perStick}/stick** ${stickLabel}\n`;
+        description += `[${title}](${deal.link})\n`;
+        description += `Total: $${deal.price} | ${deal.condition}\n\n`;
+      } else {
+        description += `**#${idx + 1}** - **$${deal.price}**\n`;
+        description += `[${title}](${deal.link})\n`;
+        description += `${deal.condition} | ${deal.seller || 'Unknown seller'}\n\n`;
+      }
     });
 
-    if (deals.length > 5) {
-      description += `_...and ${deals.length - 5} more (see Google Sheet)_\n`;
+    if (deals.length > 10) {
+      description += `_...and ${deals.length - 10} more (see dashboard)_\n`;
     }
 
     const now = new Date();
