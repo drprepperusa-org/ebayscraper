@@ -100,6 +100,7 @@ function isValidDDR4RAM(title) {
 function parseListings(html, searchQuery, options = {}) {
   const $ = cheerio.load(html);
   const maxPrice = searchQuery.maxPrice || 9999;
+  const minPrice = searchQuery.minPrice || 0;
   const isRAM = searchQuery.type === 'ram';
   // Per-product excludes take precedence, fall back to global
   const excludeKeywords = (searchQuery.excludeKeywords && searchQuery.excludeKeywords.length > 0)
@@ -190,6 +191,7 @@ function parseListings(html, searchQuery, options = {}) {
 
       // Price check (per-stick for RAM, total price for general)
       if (effectivePrice >= maxPrice) return;
+      if (effectivePrice < minPrice) return;
 
       // Link
       let link = 'N/A';
@@ -209,6 +211,7 @@ function parseListings(html, searchQuery, options = {}) {
         type: searchQuery.type || 'general',
         title,
         price: price.toFixed(2),
+        minPrice: minPrice.toFixed(2),
         maxPrice: maxPrice.toFixed(2),
         stickCount,
         perStickCost,

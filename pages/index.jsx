@@ -37,11 +37,13 @@ export default function Dashboard() {
   const [binOnly, setBinOnly] = useState(true);
   const [searchQueries, setSearchQueries] = useState([]);
   const [newQuery, setNewQuery] = useState('');
+  const [newMinPrice, setNewMinPrice] = useState(0);
   const [newMaxPrice, setNewMaxPrice] = useState(100);
   const [newType, setNewType] = useState('general');
   const [discordWebhook, setDiscordWebhook] = useState('');
   const [editIdx, setEditIdx] = useState(null);
   const [editQuery, setEditQuery] = useState('');
+  const [editMinPrice, setEditMinPrice] = useState(0);
   const [editMaxPrice, setEditMaxPrice] = useState(0);
   const [editType, setEditType] = useState('general');
   const [editExcludes, setEditExcludes] = useState([]);
@@ -137,6 +139,7 @@ export default function Dashboard() {
         setSearchQueries(data.products.map(p => ({
           id: p.id,
           query: p.query,
+          minPrice: parseFloat(p.min_price || 0),
           maxPrice: parseFloat(p.max_price),
           type: p.type,
           excludeKeywords: p.exclude_keywords || [],
@@ -152,13 +155,14 @@ export default function Dashboard() {
     try {
       const res = await fetch('/api/products', {
         method: 'POST', headers,
-        body: JSON.stringify({ query: newQuery.trim(), maxPrice: newMaxPrice, type: newType, excludeKeywords: [] }),
+        body: JSON.stringify({ query: newQuery.trim(), minPrice: newMinPrice, maxPrice: newMaxPrice, type: newType, excludeKeywords: [] }),
       });
       const data = await res.json();
       if (data.product) {
         setSearchQueries(prev => [...prev, {
           id: data.product.id,
           query: data.product.query,
+          minPrice: parseFloat(data.product.min_price || 0),
           maxPrice: parseFloat(data.product.max_price),
           type: data.product.type,
           excludeKeywords: data.product.exclude_keywords || [],
@@ -189,6 +193,7 @@ export default function Dashboard() {
     const sq = searchQueries[idx];
     setEditIdx(idx);
     setEditQuery(sq.query);
+    setEditMinPrice(sq.minPrice || 0);
     setEditMaxPrice(sq.maxPrice);
     setEditType(sq.type);
     setEditExcludes(sq.excludeKeywords || []);
@@ -216,11 +221,11 @@ export default function Dashboard() {
       if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
       await fetch('/api/products', {
         method: 'PUT', headers,
-        body: JSON.stringify({ id: product.id, query: editQuery, maxPrice: editMaxPrice, type: editType, excludeKeywords: editExcludes }),
+        body: JSON.stringify({ id: product.id, query: editQuery, minPrice: editMinPrice, maxPrice: editMaxPrice, type: editType, excludeKeywords: editExcludes }),
       }).catch(() => {});
     }
     const updated = [...searchQueries];
-    updated[editIdx] = { ...updated[editIdx], query: editQuery, maxPrice: editMaxPrice, type: editType, excludeKeywords: editExcludes };
+    updated[editIdx] = { ...updated[editIdx], query: editQuery, minPrice: editMinPrice, maxPrice: editMaxPrice, type: editType, excludeKeywords: editExcludes };
     setSearchQueries(updated);
     setEditIdx(null);
     log('Updated: ' + editQuery, 'ok');
@@ -430,6 +435,11 @@ export default function Dashboard() {
                       className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-lg text-sm text-white outline-none focus:border-violet-500" />
                     <div className="flex gap-2">
                       <div className="flex-1">
+                        <label className="text-[10px] text-gray-500 uppercase">Min Price ($)</label>
+                        <input type="number" value={editMinPrice} onChange={e => setEditMinPrice(parseInt(e.target.value) || 0)} min={0}
+                          className="w-full px-3 py-1.5 bg-dark-bg border border-dark-border rounded-lg text-sm text-white outline-none focus:border-violet-500 mt-1" />
+                      </div>
+                      <div className="flex-1">
                         <label className="text-[10px] text-gray-500 uppercase">Max Price ($)</label>
                         <input type="number" value={editMaxPrice} onChange={e => setEditMaxPrice(parseInt(e.target.value) || 0)} min={1}
                           className="w-full px-3 py-1.5 bg-dark-bg border border-dark-border rounded-lg text-sm text-white outline-none focus:border-violet-500 mt-1" />
@@ -476,7 +486,7 @@ export default function Dashboard() {
                         <div className="text-[10px] text-red-400/70 truncate">excludes: {sq.excludeKeywords.join(', ')}</div>
                       )}
                     </div>
-                    <span className="text-xs text-emerald-400 font-semibold whitespace-nowrap">&lt; ${sq.maxPrice}</span>
+                    <span className="text-xs text-emerald-400 font-semibold whitespace-nowrap">{sq.minPrice > 0 ? `$${sq.minPrice}–$${sq.maxPrice}` : `< $${sq.maxPrice}`}</span>
                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${sq.type === 'ram' ? 'bg-violet-500/15 text-violet-400' : 'bg-blue-500/15 text-blue-400'}`}>{sq.type === 'ram' ? 'RAM ($/stick)' : 'General'}</span>
                     <button onClick={() => startEdit(i)} className="text-gray-600 hover:text-violet-400"><Pencil className="w-3.5 h-3.5" /></button>
                     <button onClick={() => removeProduct(i)} className="text-gray-600 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
@@ -492,7 +502,12 @@ export default function Dashboard() {
                   placeholder="Search eBay for anything... e.g. Better Pack 555"
                   className="w-full px-3 py-2.5 bg-dark-bg border border-dark-border rounded-lg text-sm text-white outline-none focus:border-violet-500 placeholder:text-gray-600" />
                 <div className="flex gap-2">
-                  <div className={isAdmin ? "flex-1" : "w-full"}>
+                  <div className="flex-1">
+                    <label className="text-[10px] text-gray-500 uppercase tracking-wider">Min Price ($)</label>
+                    <input type="number" value={newMinPrice} onChange={e => setNewMinPrice(parseInt(e.target.value) || 0)} min={0}
+                      className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-lg text-sm text-white outline-none focus:border-violet-500 mt-1" />
+                  </div>
+                  <div className="flex-1">
                     <label className="text-[10px] text-gray-500 uppercase tracking-wider">Max Price ($)</label>
                     <input type="number" value={newMaxPrice} onChange={e => setNewMaxPrice(parseInt(e.target.value) || 0)} min={1}
                       className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-lg text-sm text-white outline-none focus:border-violet-500 mt-1" />

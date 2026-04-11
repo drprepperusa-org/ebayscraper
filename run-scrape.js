@@ -31,6 +31,7 @@ async function main() {
 
     const searchQueries = products.map(p => ({
       query: p.query,
+      minPrice: parseFloat(p.min_price || 0),
       maxPrice: parseFloat(p.max_price),
       type: p.type,
       excludeKeywords: p.exclude_keywords || [],

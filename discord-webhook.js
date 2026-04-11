@@ -62,14 +62,16 @@ class DiscordWebhook {
   _buildEmbed(product, deals, queryContext) {
     const topDeals = deals.slice(0, 10);
     const maxPrice = deals[0]?.maxPrice || queryContext?.maxPrice || '?';
+    const minPrice = deals[0]?.minPrice || queryContext?.minPrice || 0;
     const isRAM = deals[0]?.type === 'ram' || queryContext?.type === 'ram';
     const priceLabel = isRAM ? '/stick' : '';
+    const rangeText = parseFloat(minPrice) > 0 ? `$${minPrice} – $${maxPrice}${priceLabel}` : `under $${maxPrice}${priceLabel}`;
 
     let description;
     if (deals.length === 0) {
-      description = `**No deals found** under $${maxPrice}${priceLabel}\n_No matching listings on eBay this scrape._`;
+      description = `**No deals found** ${rangeText}\n_No matching listings on eBay this scrape._`;
     } else {
-      description = `Found **${deals.length}** deals under $${maxPrice}${priceLabel}\n\n`;
+      description = `Found **${deals.length}** deals ${rangeText}\n\n`;
 
       topDeals.forEach((deal, idx) => {
         const title = deal.title.length > 80 ? deal.title.substring(0, 77) + '...' : deal.title;
