@@ -19,7 +19,7 @@ class DiscordWebhook {
     throw new Error('DISCORD_WEBHOOK_URL not found in .env');
   }
 
-  async sendDeals(deals) {
+  async sendDeals(deals, allQueries = []) {
     if (!this.WEBHOOK_URL) {
       console.warn('No Discord webhook configured, skipping alert');
       return;
@@ -27,8 +27,15 @@ class DiscordWebhook {
 
     const grouped = this._groupByProduct(deals);
 
+    // Ensure every searched query gets an embed (even empty ones)
+    for (const sq of allQueries) {
+      if (!grouped[sq.query]) grouped[sq.query] = [];
+    }
+
     for (const [product, productDeals] of Object.entries(grouped)) {
-      const embed = this._buildEmbed(product, productDeals);
+      // Find the matching query for context (maxPrice, type)
+      const matchingQuery = allQueries.find(q => q.query === product);
+      const embed = this._buildEmbed(product, productDeals, matchingQuery);
       await axios.post(this.WEBHOOK_URL, { embeds: [embed] });
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
@@ -43,31 +50,36 @@ class DiscordWebhook {
     }, {});
   }
 
-  _buildEmbed(product, deals) {
+  _buildEmbed(product, deals, queryContext) {
     const topDeals = deals.slice(0, 10);
-    const maxPrice = deals[0]?.maxPrice || '?';
-    const isRAM = deals[0]?.type === 'ram';
+    const maxPrice = deals[0]?.maxPrice || queryContext?.maxPrice || '?';
+    const isRAM = deals[0]?.type === 'ram' || queryContext?.type === 'ram';
     const priceLabel = isRAM ? '/stick' : '';
 
-    let description = `Found **${deals.length}** deals under $${maxPrice}${priceLabel}\n\n`;
+    let description;
+    if (deals.length === 0) {
+      description = `**No deals found** under $${maxPrice}${priceLabel}\n_No matching listings on eBay this scrape._`;
+    } else {
+      description = `Found **${deals.length}** deals under $${maxPrice}${priceLabel}\n\n`;
 
-    topDeals.forEach((deal, idx) => {
-      const title = deal.title.length > 80 ? deal.title.substring(0, 77) + '...' : deal.title;
-      if (isRAM) {
-        const stickLabel = deal.stickCount > 1 ? `(${deal.stickCount}x)` : '(1x)';
-        const perStick = deal.perStickCost || deal.price;
-        description += `**#${idx + 1}** - **$${perStick}/stick** ${stickLabel}\n`;
-        description += `[${title}](${deal.link})\n`;
-        description += `Total: $${deal.price} | ${deal.condition}\n\n`;
-      } else {
-        description += `**#${idx + 1}** - **$${deal.price}**\n`;
-        description += `[${title}](${deal.link})\n`;
-        description += `${deal.condition} | ${deal.seller || 'Unknown seller'}\n\n`;
+      topDeals.forEach((deal, idx) => {
+        const title = deal.title.length > 80 ? deal.title.substring(0, 77) + '...' : deal.title;
+        if (isRAM) {
+          const stickLabel = deal.stickCount > 1 ? `(${deal.stickCount}x)` : '(1x)';
+          const perStick = deal.perStickCost || deal.price;
+          description += `**#${idx + 1}** - **$${perStick}/stick** ${stickLabel}\n`;
+          description += `[${title}](${deal.link})\n`;
+          description += `Total: $${deal.price} | ${deal.condition}\n\n`;
+        } else {
+          description += `**#${idx + 1}** - **$${deal.price}**\n`;
+          description += `[${title}](${deal.link})\n`;
+          description += `${deal.condition} | ${deal.seller || 'Unknown seller'}\n\n`;
+        }
+      });
+
+      if (deals.length > 10) {
+        description += `_...and ${deals.length - 10} more (see dashboard)_\n`;
       }
-    });
-
-    if (deals.length > 10) {
-      description += `_...and ${deals.length - 10} more (see dashboard)_\n`;
     }
 
     const now = new Date();
@@ -80,7 +92,7 @@ class DiscordWebhook {
     return {
       title: `${product} — ${deals.length} Deals`,
       description,
-      color: 0x6c5ce7,
+      color: deals.length === 0 ? 0x4a5568 : 0x6c5ce7,
       timestamp: new Date().toISOString(),
       footer: {
         text: `OpenClaw eBay Scraper | ${pstTime}`,

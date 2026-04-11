@@ -301,6 +301,7 @@ async function scrapeEbay(options = {}) {
 async function scrapeAndNotify(options = {}) {
   const sendToSheets = options.sendToSheets !== false;
   const sendToDiscord = options.sendToDiscord !== false;
+  const searchQueries = options.searchQueries || [];
 
   console.log('eBay Scraper started');
 
@@ -309,8 +310,19 @@ async function scrapeAndNotify(options = {}) {
   const scanned = scrapeResult.scanned;
   console.log(`Scanned ${scanned} listings, found ${allDeals.length} deals`);
 
+  // Send Discord even with 0 deals so user sees that scrape ran
   if (allDeals.length === 0) {
-    return { deals: 0, scanned, results: [], sheetsStatus: 'skipped', discordStatus: 'skipped' };
+    let discordStatus = 'skipped';
+    if (sendToDiscord) {
+      try {
+        const discord = new DiscordWebhook();
+        await discord.sendDeals([], searchQueries);
+        discordStatus = 'sent (empty)';
+      } catch (err) {
+        discordStatus = 'error: ' + err.message;
+      }
+    }
+    return { deals: 0, scanned, results: [], sheetsStatus: 'skipped', discordStatus };
   }
 
   // Keep newly-listed order from eBay (no re-sort)
@@ -332,7 +344,7 @@ async function scrapeAndNotify(options = {}) {
   if (sendToDiscord) {
     try {
       const discord = new DiscordWebhook();
-      await discord.sendDeals(allDeals);
+      await discord.sendDeals(allDeals, searchQueries);
       discordStatus = 'sent';
     } catch (err) {
       discordStatus = 'error: ' + err.message;
