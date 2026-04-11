@@ -33,11 +33,20 @@ class DiscordWebhook {
     }
 
     for (const [product, productDeals] of Object.entries(grouped)) {
-      // Find the matching query for context (maxPrice, type)
-      const matchingQuery = allQueries.find(q => q.query === product);
-      const embed = this._buildEmbed(product, productDeals, matchingQuery);
-      await axios.post(this.WEBHOOK_URL, { embeds: [embed] });
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      try {
+        // Find the matching query for context (maxPrice, type)
+        const matchingQuery = allQueries.find(q => q.query === product);
+        const embed = this._buildEmbed(product, productDeals, matchingQuery);
+        // Discord description limit is 4096 chars — truncate if needed
+        if (embed.description.length > 4000) {
+          embed.description = embed.description.substring(0, 3950) + '\n\n_...truncated_';
+        }
+        await axios.post(this.WEBHOOK_URL, { embeds: [embed] });
+        console.log(`Discord: sent "${product}" (${productDeals.length} deals)`);
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      } catch (err) {
+        console.error(`Discord error for "${product}":`, err.response?.data || err.message);
+      }
     }
   }
 
