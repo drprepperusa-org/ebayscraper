@@ -134,12 +134,12 @@ function parseListings(html, searchQuery, options = {}) {
       const title = cleanTitle(rawTitle);
       if (!title || title.length < 5) return;
 
-      // Relevance check: title must contain all key words from search query
-      const queryWords = searchQuery.query.toLowerCase().split(/\s+/).filter(w => w.length >= 2);
+      // Relevance check: title must contain ALL significant words from search query
+      // Words under 3 chars (like "es") are skipped as they match too broadly
+      const queryWords = searchQuery.query.toLowerCase().split(/\s+/).filter(w => w.length >= 3);
       const titleLowerCheck = title.toLowerCase();
-      const matchCount = queryWords.filter(w => titleLowerCheck.includes(w)).length;
-      // Require at least 70% of query words to match (e.g. 3 of 4 words)
-      if (queryWords.length > 0 && matchCount / queryWords.length < 0.7) return;
+      const allMatch = queryWords.every(w => titleLowerCheck.includes(w));
+      if (queryWords.length > 0 && !allMatch) return;
 
       // Skip auctions
       const fullText = $el.text().toLowerCase();
