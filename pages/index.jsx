@@ -150,8 +150,12 @@ export default function Dashboard() {
 
   async function addProduct() {
     if (!newQuery.trim()) return;
-    const headers = { 'Content-Type': 'application/json' };
-    if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
+    let tk = authToken;
+    if (sb) {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) { tk = session.access_token; setAuthToken(tk); }
+    }
+    const headers = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk };
     try {
       const res = await fetch('/api/products', {
         method: 'POST', headers,
@@ -217,12 +221,27 @@ export default function Dashboard() {
     if (editIdx === null) return;
     const product = searchQueries[editIdx];
     if (product.id) {
-      const headers = { 'Content-Type': 'application/json' };
-      if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
-      await fetch('/api/products', {
-        method: 'PUT', headers,
-        body: JSON.stringify({ id: product.id, query: editQuery, minPrice: editMinPrice, maxPrice: editMaxPrice, type: editType, excludeKeywords: editExcludes }),
-      }).catch(() => {});
+      // Get fresh token
+      let tk = authToken;
+      if (sb) {
+        const { data: { session } } = await sb.auth.getSession();
+        if (session) { tk = session.access_token; setAuthToken(tk); }
+      }
+      try {
+        const res = await fetch('/api/products', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
+          body: JSON.stringify({ id: product.id, query: editQuery, minPrice: editMinPrice, maxPrice: editMaxPrice, type: editType, excludeKeywords: editExcludes }),
+        });
+        const data = await res.json();
+        if (data.error) {
+          log('Save failed: ' + data.error, 'err');
+          return;
+        }
+      } catch (e) {
+        log('Save error: ' + e.message, 'err');
+        return;
+      }
     }
     const updated = [...searchQueries];
     updated[editIdx] = { ...updated[editIdx], query: editQuery, minPrice: editMinPrice, maxPrice: editMaxPrice, type: editType, excludeKeywords: editExcludes };
