@@ -239,8 +239,11 @@ async function scrapeQuery(searchQuery, options) {
   let scanned = 0;
 
   const binParam = options.binOnly !== false ? '&LH_BIN=1' : '';
+  // eBay price filter: _udlo=min, _udhi=max (applied before we scrape)
+  const minPriceParam = searchQuery.minPrice > 0 ? `&_udlo=${searchQuery.minPrice}` : '';
+  const maxPriceParam = searchQuery.maxPrice < 9999 ? `&_udhi=${searchQuery.maxPrice}` : '';
   for (let page = 1; page <= maxPages; page++) {
-    const url = `https://www.ebay.com/sch/i.html?_nkw=${encodedQuery}&_sop=10&rt=nc${binParam}&_pgn=${page}`;
+    const url = `https://www.ebay.com/sch/i.html?_nkw=${encodedQuery}&_sop=10&rt=nc${binParam}${minPriceParam}${maxPriceParam}&_pgn=${page}`;
 
     try {
       console.log(`[${queryText}] page ${page}...`);
