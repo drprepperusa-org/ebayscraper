@@ -295,8 +295,8 @@ async function scrapeEbay(options = {}) {
     for (const deal of result.deals) {
       // Dedup by link URL
       if (deal.link !== 'N/A' && seenLinks.has(deal.link)) continue;
-      // Dedup by title + price (catches same item with different URLs)
-      const titleKey = (deal.title + '|' + deal.price).toLowerCase();
+      // Dedup by title (same listing appearing on multiple pages)
+      const titleKey = deal.title.toLowerCase().trim();
       if (seenTitles.has(titleKey)) continue;
 
       if (deal.link !== 'N/A') seenLinks.add(deal.link);
