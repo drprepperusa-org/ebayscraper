@@ -289,13 +289,19 @@ async function scrapeEbay(options = {}) {
     );
   }
 
+  const seenTitles = new Set();
   for (const result of queryResults) {
     totalScanned += result.scanned;
     for (const deal of result.deals) {
-      if (deal.link === 'N/A' || !seenLinks.has(deal.link)) {
-        if (deal.link !== 'N/A') seenLinks.add(deal.link);
-        allDeals.push(deal);
-      }
+      // Dedup by link URL
+      if (deal.link !== 'N/A' && seenLinks.has(deal.link)) continue;
+      // Dedup by title + price (catches same item with different URLs)
+      const titleKey = (deal.title + '|' + deal.price).toLowerCase();
+      if (seenTitles.has(titleKey)) continue;
+
+      if (deal.link !== 'N/A') seenLinks.add(deal.link);
+      seenTitles.add(titleKey);
+      allDeals.push(deal);
     }
     console.log(`[${result.query}] ${result.deals.length} deals from ${result.scanned} listings`);
   }
