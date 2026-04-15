@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   if (!url || !key) return res.status(500).json({ error: 'Missing env' });
 
   const sb = createClient(url, key);
-  const { data, error } = await sb.from('products').select('id, query, max_price, type, created_by, active').order('created_at');
+  const { data, error } = await sb.from('products').select('id, query, min_price, max_price, type, created_by, active, exclude_keywords').order('created_at');
 
   if (error) return res.status(500).json({ error: error.message });
   res.status(200).json({ products: data });

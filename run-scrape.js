@@ -26,7 +26,7 @@ async function main() {
     console.log('\n=== Scraping for user:', uid, '===');
 
     // Load user's products
-    const { data: products } = await sb.from('products').select('*').eq('created_by', uid).eq('active', true);
+    const { data: products } = await sb.from('products').select('id, query, min_price, max_price, type, exclude_keywords').eq('created_by', uid).eq('active', true);
     if (!products || products.length === 0) continue;
 
     const searchQueries = products.map(p => ({

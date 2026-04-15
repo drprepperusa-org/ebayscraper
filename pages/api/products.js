@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     const { data, error } = await supabase
       .from('products')
-      .select('*')
+      .select('id, query, min_price, max_price, type, active, created_by, created_at, exclude_keywords')
       .eq('active', true)
       .eq('created_by', user.id)
       .order('created_at', { ascending: true });
